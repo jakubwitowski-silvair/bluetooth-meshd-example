@@ -60,7 +60,7 @@ class Application:
             path = os.path.join(self.path, str(index))
             self.elements[index] = (path, ElementInterface(self, index, models=[0]))
 
-            self.bus.register(path, fallback=False, interface=ElementInterface(self, index))
+            self.bus.register(path, fallback=False, interface= self.elements[index][1])
             self.bus.object_added(path)
 
         self.mesh_service = self.bus['org.bluez.mesh']
@@ -88,32 +88,18 @@ class Application:
 
     async def import_local_node(self):
         json_data = dict(
-            cid='%04x' % self.application_interface.get_company_id(),
-            pid='%04x' % self.application_interface.get_product_id(),
-            vid='%04x' % self.application_interface.get_version_id(),
             IVindex=0,
             IVupdate=0,
             unicastAddress='%04x' % 0x0042,
             deviceKey="56325fd145f3d5eee1b82136dc3e1454",
-            elements={
-                index: dict(
-                    location='%04x' % interface.get_location(),
-                    models={ '%04x' % i: {} for i in interface.get_models() },
-                )
-                for index, (path, interface) in self.elements.items()
-            },
-            netKeys={
-                0: dict(
-                    keyRefresh=0,
-                    key="9a17cbec499b4151ae045ac6f259bf43"
-                ),
-            },
+            netKey="3a55020926224b6b8b97b9f370cdcd07",
+            keyRefresh=0
             # appKeys={
             #     0: "68d3c3363bae45e2a2fd20de1b8614ed"
             # },
         )
         self.logger.info(json.dumps(json_data))
-        token, = await self.network_interface.ImportLocalNode(json.dumps(json_data),
+        token, = await self.network_interface.ImportLocalNode(self.path, json.dumps(json_data),
                                                              list(self.uuid.bytes))
         return token
 
